@@ -15,7 +15,8 @@
   environment.systemPackages = with pkgs; [
   alacritty
   bitmeter
-  carla 
+  carla
+  ffmpeg-full
   glow
   libjack2
   jack2 
@@ -25,6 +26,8 @@
   jackmeter
   meterbridge
   qjackctl # jack
+  sox
+  soxr
   supercollider
   timemachine
   unzip
@@ -63,6 +66,19 @@ environment.variables = {
       nameList = "rtc0 snd";
     };
 
+  services.jack = {
+    jackd.enable = true;
+    # support ALSA only programs via ALSA JACK PCM plugin
+    alsa.enable = true;
+    # support ALSA only programs via loopback device (supports programs like Steam)
+    loopback = {
+      enable = false;
+      # buffering parameters for dmix device to work with ALSA only semi-professional sound programs
+      #dmixConfig = ''
+      #  period_size 2048
+      #'';
+    };
+  };
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
@@ -79,6 +95,27 @@ environment.variables = {
   networking.useDHCP = false;
   networking.interfaces.enp3s0.useDHCP = true;
   networking.interfaces.enp4s0.useDHCP = true;
+
+security.acme.email = "andrew@multipli.city";
+security.acme.acceptTerms = true;
+
+services.nginx.enable = true;
+services.nginx.virtualHosts."sociosonics.org" = {
+    #addSSL = true;
+    #enableACME = true;
+    root = "/var/www/";
+};
+services.mpd.enable = true;
+services.mpd.extraConfig = ''
+  audio_output {
+    type "alsa"
+    name "alsa"
+    device "hw:1"
+  }
+'';
+services.mpd.musicDirectory = "/mnt/Music";
+services.mpd.network.listenAddress = "any"; # allow to control from any host
+
 
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
@@ -102,51 +139,6 @@ environment.variables = {
   #services.xserver.displayManager.gdm.enable = true;
   #services.xserver.desktopManager.gnome.enable = true;
   services.xserver.windowManager.i3.enable = true;
-
-services.pipewire = {
-  config.pipewire = {
-    "context.properties" = {
-      "link.max-buffers" = 16;
-      "log.level" = 2;
-      "default.clock.rate" = 48000;
-      "default.clock.quantum" = 32;
-      "default.clock.min-quantum" = 32;
-      "default.clock.max-quantum" = 32;
-      "core.daemon" = true;
-      "core.name" = "pipewire-0";
-    };
-    "context.modules" = [
-      {
-        name = "libpipewire-module-rtkit";
-        args = {
-          "nice.level" = -15;
-          "rt.prio" = 88;
-          "rt.time.soft" = 200000;
-          "rt.time.hard" = 200000;
-        };
-        flags = [ "ifexists" "nofail" ];
-      }
-      { name = "libpipewire-module-protocol-native"; }
-      { name = "libpipewire-module-profiler"; }
-      { name = "libpipewire-module-metadata"; }
-      { name = "libpipewire-module-spa-device-factory"; }
-      { name = "libpipewire-module-spa-node-factory"; }
-      { name = "libpipewire-module-client-node"; }
-      { name = "libpipewire-module-client-device"; }
-      {
-        name = "libpipewire-module-portal";
-        flags = [ "ifexists" "nofail" ];
-      }
-      {
-        name = "libpipewire-module-access";
-        args = {};
-      }
-      { name = "libpipewire-module-adapter"; }
-      { name = "libpipewire-module-link-factory"; }
-      { name = "libpipewire-module-session-manager"; }
-    ];
-  };
-};
 
 hardware.pulseaudio.enable = false;
 
