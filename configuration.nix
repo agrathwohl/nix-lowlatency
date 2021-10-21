@@ -10,22 +10,43 @@
       ./hardware-configuration.nix
       # Audio
       /home/gwohl/nix/musnix
+      # Web and cloud stuff
+      #/home/gwohl/nix/nixcloud-webservices
     ];
 
   environment.systemPackages = with pkgs; [
+  clang
+  gnumake
+  libtool
+  autoconf
+  automake
+  m4
   alacritty
   bitmeter
   carla
+  cmake
   ffmpeg-full
+  fftwFloat
+  fuse
+  gcc
   glow
+  libuuid
+  libcap
   libjack2
   jack2 
   jack2Full
   jack_capture
   jackmix
   jackmeter
+  jq
+  libgpgerror
+  libnotify
+  libsodium
   meterbridge
+  pango
+  python
   qjackctl # jack
+  readline
   sox
   soxr
   supercollider
@@ -35,6 +56,13 @@
   xjadeo # video sync for jack
   wine-staging
   winetricks
+
+  nur.repos.dan4ik605743.bitmap-fonts
+  nur.repos.crazazy.firefox-addons.old-reddit-redirect
+  nur.repos.crazazy.firefox-addons.soundcloud-mp3-downloader
+  nur.repos.crazazy.firefox-addons.ublock-origin
+  nur.repos.crazazy.firefox-addons.tabliss
+  nur.repos.crazazy.js.parcel
   ];
 
 environment.variables = {
@@ -52,6 +80,12 @@ environment.variables = {
       url = https://github.com/nix-community/neovim-nightly-overlay/archive/master.tar.gz;
     }))
   ];
+
+  nixpkgs.config.packageOverrides = pkgs: {
+    nur = import (builtins.fetchTarball "https://github.com/nix-community/NUR/archive/master.tar.gz") {
+      inherit pkgs;
+    };
+  };
 
   musnix.enable = true;
   musnix.kernel.optimize = true;
@@ -201,6 +235,8 @@ users.users.gwohl = {
   extraGroups = [ "wheel" "networkmanager" "audio" ];
 };
 
+
+
   fonts = {
     fontconfig.enable = true;
     fontDir.enable = true;
@@ -235,5 +271,6 @@ users.users.gwohl = {
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "21.05"; # Did you read the comment?
 
+  nix.trustedUsers = [ "root" "gwohl" ];
 }
 
