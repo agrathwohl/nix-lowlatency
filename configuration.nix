@@ -25,9 +25,10 @@
   # #############################################
   musnix.rtirq = {
     resetAll = 1;
-    prioLow = 10;
+    prioLow = 0;
+    prioHigh = 99;
     enable = true;
-    nameList = "rtc0 snd";
+    nameList = "hpet rtc0 snd";
   };
 
   musnix.soundcardPciId = "01:00.0";
@@ -75,12 +76,21 @@
   networking.interfaces.enp4s0.useDHCP = true;
   networking.interfaces.enp5s0.useDHCP = true;
 
+  services.smartd = {
+    enable = true;
+    autodetect = true;
+    notifications = {
+      x11.enable = true;
+      wall.enable = true;
+    };
+  };
+
   # Configure keymap in X11
   services.xserver.enable = true;
   services.xserver.videoDrivers = [ "nvidia" ];
   services.xserver.windowManager.i3 = {
   	enable = true;
-        extraPackages = with pkgs; [
+    extraPackages = with pkgs; [
 		dmenu #application launcher most people use
 		i3status # gives you the default i3 status bar
 		i3lock #default i3 screen locker
@@ -91,16 +101,27 @@
   services.xserver.libinput.enable = true;
   services.xserver.autorun = false;
   services.xserver.dpi = 110;
+  services.xserver.enableCtrlAltBackspace = true;
 
-  services.xserver.displayManager.defaultSession = "none+i3";
+  services.xserver.displayManager = {
+    defaultSession = "none+i3";
+    autoLogin = {
+      enable = true;
+      user = "gwohl";
+    };
+  };
 
   services.picom = {
     enable = true;
     activeOpacity = 1.0;
     inactiveOpacity = 1.0;
     menuOpacity = 0.8;
-    backend = "glx";
+    backend = "xrender";
   };
+
+  services.fstrim.enable = true;
+  services.fwupd.enable = true;
+
 
   services.mpd.enable = true;
   services.mpd.extraConfig = ''
@@ -149,15 +170,13 @@
 
   # Enable sound.
   sound.enable = true;
-  # But please never allow that awful pulseaudio software near my system - ever!
-  hardware.pulseaudio.enable = false;
 
   hardware.video.hidpi.enable = true;
 
   services.jack = {
     jackd = {
       enable = true;
-      extraOptions = [ "-P90" "-R" "-u" "-dalsa" "-dhw:HDSPMx0a922c,0" "-r48000" "-p64" "-n2" ];
+      extraOptions = [ "-P95" "-R" "-u" "-dalsa" "-dhw:HDSPMx0a922c,0" "-r48000" "-p64" "-n2" ];
     };
     # support ALSA only programs via ALSA JACK PCM plugin
     alsa.enable = true;
@@ -250,7 +269,9 @@
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
-  # programs.mtr.enable = true;
+  programs.mtr.enable = true;
+  programs.iftop.enable = true;
+  programs.iotop.enable = true;
   programs.gnupg = {
     agent = {
       enable = true;
@@ -826,7 +847,7 @@
   # Enable the OpenSSH daemon.
   services.openssh.enable = true;
 
-  programs.wireshark.enable = true;
+  #programs.wireshark.enable = true;
 
   # Open ports in the firewall.
   # networking.firewall.allowedTCPPorts = [ ... ];
@@ -916,8 +937,8 @@
     meterbridge
     ncmpcpp
     non
+    pavucontrol
     pkg-config
-    qjackctl
     rubberband
     sox
     soxr
@@ -1061,8 +1082,38 @@
     ];
     JACK_NO_START_SERVER = "1";
     JACK_NO_AUDIO_RESERVATION = "1";
+
+    BROWSER = "firefox";
   };
   environment.shellAliases = {
     ytdl = "yt-dlp -N 10 --yes-playlist --download-archive 'archive.log' -i --add-metadata --all-subs -f '(bestvideo[vcodec^=av01][height>=1080][fps>30]/bestvideo[vcodec=vp9.2][height>=1080][fps>30]/bestvideo[vcodec=vp9][height>=1080][fps>30]/bestvideo[vcodec^=av01][height>=1080]/bestvideo[vcodec=vp9.2][height>=1080]/bestvideo[vcodec=vp9][height>=1080]/bestvideo[height>=1080]/bestvideo[vcodec^=av01][height>=720][fps>30]/bestvideo[vcodec=vp9.2][height>=720][fps>30]/bestvideo[vcodec=vp9][height>=720][fps>30]/bestvideo[vcodec^=av01][height>=720]/bestvideo[vcodec=vp9.2][height>=720]/bestvideo[vcodec=vp9][height>=720]/bestvideo[height>=720]/bestvideo)+(bestaudio[acodec=opus]/bestaudio)/best' --merge-output-format mkv";
   };
+
+  hardware.pulseaudio.enable = true;
+  hardware.pulseaudio.package = pkgs.pulseaudioFull;
+  hardware.pulseaudio.extraConfig = ''
+    unload-module module-jackdbus-detect
+    load-module module-jack-sink channels=2 connect=true
+    load-module module-jack-source channels=2 connect=false
+  '';
+  hardware.pulseaudio.daemon.config = {realtime-scheduling = "yes";};
+  systemd.user.services.pulseaudio.after = [ "jack.service" ];
+  systemd.user.services.pulseaudio.environment = {
+    JACK_PROMISCUOUS_SERVER = "jackaudio";
+  };
+
+  nix = {
+    buildCores = 6;
+    maxJobs = 5;
+  };
+
+  # Enable all the firmware
+  hardware.enableAllFirmware = true;
+  # Enable all the firmware with a license allowing redistribution. (i.e. free firmware and firmware-linux-nonfree)
+  hardware.enableRedistributableFirmware = true;
+
+  boot.cleanTmpDir = true;
+
+  # Enable microcode updates for Intel CPU
+  hardware.cpu.intel.updateMicrocode = true;
 }
