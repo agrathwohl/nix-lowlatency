@@ -123,11 +123,11 @@
   services.fwupd.enable = true;
 
 
-  services.mpd.enable = true;
+  services.mpd.enable = false;
   services.mpd.extraConfig = ''
     audio_output {
-      type "alsa"
-      name "ALSA"
+        type            "pulse"
+        name            "pulse audio"
     }
   '';
   services.mpd.musicDirectory = "/mnt/datadaddy/Music";
@@ -140,7 +140,7 @@
     pkgs.mopidy-moped pkgs.mopidy-iris ];
     configuration = ''
       [audio]
-      output = autoaudiosink
+      output = pulsesink
       [local]
       media_dir = /mnt/datadaddy/Music
     '';
@@ -905,6 +905,7 @@
     python
     python3
     pyright
+    ranger
     readline
     rofi
     signal-desktop
@@ -1092,9 +1093,8 @@
   hardware.pulseaudio.enable = true;
   hardware.pulseaudio.package = pkgs.pulseaudioFull;
   hardware.pulseaudio.extraConfig = ''
-    unload-module module-jackdbus-detect
     load-module module-jack-sink channels=2 connect=true
-    load-module module-jack-source channels=2 connect=false
+    load-module module-jack-source channels=2 connect=true
   '';
   hardware.pulseaudio.daemon.config = {realtime-scheduling = "yes";};
   systemd.user.services.pulseaudio.after = [ "jack.service" ];
@@ -1116,4 +1116,6 @@
 
   # Enable microcode updates for Intel CPU
   hardware.cpu.intel.updateMicrocode = true;
+
+  boot.blacklistedKernelModules = [ "snd_hda_codec_realtek" "snd_hda_codec_hdmi" "snd_hda_intel" ];
 }
