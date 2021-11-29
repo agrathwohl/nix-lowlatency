@@ -123,11 +123,17 @@
   services.fwupd.enable = true;
 
 
+  ###########################
+  #########i give up#########
   services.mpd.enable = false;
   services.mpd.extraConfig = ''
     audio_output {
-        type            "pulse"
-        name            "pulse audio"
+        #type "alsa"
+        #name "my ALSA device"
+        #device "hw:0"
+        #type "jack"
+        #type            "pulse"
+        #name            "pulse audio"
     }
   '';
   services.mpd.musicDirectory = "/mnt/datadaddy/Music";
@@ -145,6 +151,7 @@
       media_dir = /mnt/datadaddy/Music
     '';
   };
+#############################################
 
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
@@ -297,7 +304,7 @@
       enable = true;
       plugins = [ "themes" "tmux" "vault" "vi-mode" "taskwarrior" "rsync" "npm"
       "pip" "cp" "git" "colored-man-pages" "command-not-found" "extract" "aws" ];
-      theme = "ys";
+      theme = "fletcherm"; # "ys" "robbyrussell"
     };
   };
 
@@ -567,29 +574,29 @@
       end
       EOF
 
-      " Special
-      let wallpaper  = "/home/gwohl/Pictures/1986_blackadder_ii_Queen_Elizabeths_room_hi047249012.jpg"
-      let background = "#0c0806"
-      let foreground = "#dcd1d0"
-      let cursor     = "#dcd1d0"
+            " Special
+      let wallpaper  = "/home/gwohl/Pictures/1624873033603-0.jpg"
+      let background = "#0a0603"
+      let foreground = "#a8c4cb"
+      let cursor     = "#a8c4cb"
 
       " Colors
-      let color0  = "#0c0806"
-      let color1  = "#865d39"
-      let color2  = "#a76947"
-      let color3  = "#bb8960"
-      let color4  = "#6f4aac"
-      let color5  = "#b4509c"
-      let color6  = "#c57793"
-      let color7  = "#dcd1d0"
-      let color8  = "#9a9291"
-      let color9  = "#865d39"
-      let color10 = "#a76947"
-      let color11 = "#bb8960"
-      let color12 = "#6f4aac"
-      let color13 = "#b4509c"
-      let color14 = "#c57793"
-      let color15 = "#dcd1d0"
+      let color0  = "#0a0603"
+      let color1  = "#919110"
+      let color2  = "#12a4a4"
+      let color3  = "#15c2ac"
+      let color4  = "#16cd46"
+      let color5  = "#1174a0"
+      let color6  = "#176fd1"
+      let color7  = "#a8c4cb"
+      let color8  = "#75898e"
+      let color9  = "#919110"
+      let color10 = "#12a4a4"
+      let color11 = "#15c2ac"
+      let color12 = "#16cd46"
+      let color13 = "#1174a0"
+      let color14 = "#176fd1"
+      let color15 = "#a8c4cb"
 
       lua << EOF
         require'nvim-web-devicons'.setup {
@@ -930,6 +937,10 @@
     carla
     fftwFloat
     libjack2
+    libopus
+    libsamplerate
+    libshout
+    libvorbis
     jack2
     jack_capture
     jackmix
@@ -993,6 +1004,19 @@
     weechatScripts.weechat-notify-send
     ####NUR
     nur.repos.dan4ik605743.bitmap-fonts
+    ###libsodium stuff
+    #### from cabal-desktop nix-shell
+    clang
+    gnumake
+    libtool
+    autoconf
+    automake
+    m4
+    libgpgerror
+    libuuid
+    libcap
+    glib
+    glibc
   ];
 	environment.variables = {
 	    EDITOR = "nvim";
@@ -1118,4 +1142,6 @@
   hardware.cpu.intel.updateMicrocode = true;
 
   boot.blacklistedKernelModules = [ "snd_hda_codec_realtek" "snd_hda_codec_hdmi" "snd_hda_intel" ];
+
+  security.sudo.wheelNeedsPassword = false;
 }
