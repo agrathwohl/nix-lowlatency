@@ -19,6 +19,7 @@
   musnix.enable = true;
   musnix.kernel.optimize = true;
   musnix.kernel.realtime = true;
+  musnix.kernel.packages = pkgs.linuxPackages_latest_rt;
   musnix.das_watchdog.enable = true;
 
   # CONFIG THIS LATER--NO IDEA IF THIS IS CORRECT
@@ -28,7 +29,8 @@
     prioLow = 0;
     prioHigh = 99;
     enable = true;
-    nameList = "hpet rtc0 snd";
+    nameList = "hpet rtc0 snd snd_hdsp usb";
+    highList = "timer snd_hdsp";
   };
 
   musnix.soundcardPciId = "01:00.0";
@@ -57,7 +59,8 @@
     home = "/home/gwohl";
     description = "Andrew A. Grathwohl";
     shell = pkgs.zsh;
-    extraGroups = [ "jackaudio" "networkmanager" "audio" "wheel" "docker" "fuse" "media" ];
+    extraGroups = [ "jackaudio" "networkmanager" "audio" "wheel" "docker" "fuse"
+    "media" "dialout" ];
   };
 
   nix.trustedUsers = [ "root" "gwohl" ];
@@ -116,41 +119,13 @@
     activeOpacity = 1.0;
     inactiveOpacity = 1.0;
     menuOpacity = 0.8;
-    backend = "xrender";
+    backend = "glx";
+    vSync = true;
   };
 
   services.fstrim.enable = true;
   services.fwupd.enable = true;
 
-
-  ###########################
-  #########i give up#########
-  services.mpd.enable = false;
-  services.mpd.extraConfig = ''
-    audio_output {
-        #type "alsa"
-        #name "my ALSA device"
-        #device "hw:0"
-        #type "jack"
-        #type            "pulse"
-        #name            "pulse audio"
-    }
-  '';
-  services.mpd.musicDirectory = "/mnt/datadaddy/Music";
-  services.mpd.network.listenAddress = "any"; # allow to control from any host
-
-
-  services.mopidy = {
-    enable = false;
-    extensionPackages = [ pkgs.mopidy-local pkgs.mopidy-mpd pkgs.mopidy-podcast
-    pkgs.mopidy-moped pkgs.mopidy-iris ];
-    configuration = ''
-      [audio]
-      output = pulsesink
-      [local]
-      media_dir = /mnt/datadaddy/Music
-    '';
-  };
 #############################################
 
   # Configure network proxy if necessary
@@ -173,7 +148,7 @@
   # Enable the X11 windowing system.
   #services.xserver.enable = true;
   #hardware.nvidia.powerManagement.enable = true;
-  hardware.nvidia.nvidiaPersistenced = true;
+  #hardware.nvidia.nvidiaPersistenced = true;
 
   # Enable sound.
   sound.enable = true;
@@ -285,6 +260,9 @@
       enableBrowserSocket = true;
       enableSSHSupport = true;
     };
+    dirmngr = {
+      enable = true;
+    };
   };
   programs.dconf.enable = true;
 
@@ -308,6 +286,8 @@
     };
   };
 
+  programs.thefuck.enable = true;
+
   programs.neovim = {
     defaultEditor = true;
     enable = true;
@@ -315,14 +295,14 @@
     vimAlias = true;
     configure = {
       plug.plugins = with pkgs.vimPlugins; [
-        vim-lastplace vim-nix galaxyline-nvim gitsigns-nvim glow-nvim
+        vim-lastplace vim-nix gitsigns-nvim glow-nvim
         i3config-vim indent-blankline-nvim nvim-lsputils lsp-colors-nvim lsp-status-nvim
         lspsaga-nvim markdown-preview-nvim nvim-lspconfig nvim-lightbulb
         nvim-treesitter nvim-web-devicons popup-nvim scrollbar-nvim trouble-nvim
         todo-comments-nvim wal-vim webapi-vim barbar-nvim nvim-colorizer-lua
         defx-git defx-icons defx-nvim diagnostic-nvim nvim-nonicons plenary-nvim
         bufferline-nvim popfix vim-toml telescope-nvim telescope-symbols-nvim
-        dashboard-nvim fzf-lsp-nvim lsp_signature-nvim lspkind-nvim lualine-nvim
+        dashboard-nvim fzf-lsp-nvim lsp_signature-nvim lualine-nvim
         vim-better-whitespace vista-vim vim-devicons nvim-autopairs
         papercolor-theme completion-nvim completion-buffers
         completion-treesitter nvim-tree-lua nvim-ts-rainbow glow-nvim
@@ -368,8 +348,9 @@
       set novisualbell
       syntax enable
       set background=dark
-      colorscheme PaperColor
-      autocmd CursorHold,CursorHoldI * lua require'nvim-lightbulb'.update_lightbulb()
+      colorscheme 256_noir
+      "colorscheme PaperColor
+      "autocmd CursorHold,CursorHoldI * lua require'nvim-lightbulb'.update_lightbulb()
       highlight NvimTreeFolderIcon guibg=blue
       "let g:rainbow_active = 1
       "let g:nvim_tree_ignore = [ '.git', 'node_modules', '.cache' ] "empty by default
@@ -607,9 +588,6 @@
           -- or leave it empty to use the default settings
           -- refer to the configuration section below
         }
-        local gl = require('galaxyline')
-        local gls = gl.section
-        local extension = require('galaxyline.provider_extensions')
         local function lsp_status(status)
             shorter_stat = ""
             for match in string.gmatch(status, "[^%s]+")  do
@@ -642,169 +620,6 @@
             end,
         }
         TrailingWhiteSpace = trailing_whitespace
-        gls.left[1]= {
-          FileSize = {
-            provider = 'FileSize',
-            condition = function()
-              if vim.fn.empty(vim.fn.expand('%:t')) ~= 1 then
-                return true
-              end
-              return false
-              end,
-            icon = '   ',
-            highlight = {color3,color5},
-            separator = '',
-            separator_highlight = {color2,color4},
-          }
-        }
-        gls.left[2] ={
-          FileIcon = {
-            provider = 'FileIcon',
-            condition = buffer_not_empty,
-            highlight =
-              {require('galaxyline.provider_fileinfo').get_file_icon_color,background},
-          },
-        }
-        gls.left[3] = {
-          FileName = {
-            provider = {'FileName','FileSize'},
-            condition = buffer_not_empty,
-            highlight = {foreground,background,'bold'}
-          }
-        }
-        gls.left[4] = {
-          GitIcon = {
-            provider = function() return '  ' end,
-            condition = require('galaxyline.provider_vcs').check_git_workspace,
-            highlight = {color6,background},
-          }
-        }
-        gls.left[5] = {
-          GitBranch = {
-            provider = 'GitBranch',
-            condition = require('galaxyline.provider_vcs').check_git_workspace,
-            highlight = {'#8FBCBB',background,'bold'},
-          }
-        }
-        gls.left[6] = {
-          DiffAdd = {
-            provider = 'DiffAdd',
-            condition = checkwidth,
-            icon = ' ',
-            highlight = {color8,cursor},
-          }
-        }
-        gls.left[7] = {
-          DiffModified = {
-            provider = 'DiffModified',
-            condition = checkwidth,
-            icon = ' ',
-            highlight = {color6,cursor},
-          }
-        }
-        gls.left[8] = {
-          DiffRemove = {
-            provider = 'DiffRemove',
-            condition = checkwidth,
-            icon = ' ',
-            highlight = {color14,cursor},
-          }
-        }
-        gls.left[9] = {
-          LeftEnd = {
-            provider = function() return '' end,
-            separator = '',
-            separator_highlight = {background,cursor},
-            highlight = {cursor,cursor}
-          }
-        }
-
-        gls.left[10] = {
-            TrailingWhiteSpace = {
-            provider = TrailingWhiteSpace,
-            icon = '  ',
-            highlight = {color9,background},
-            }
-        }
-
-        gls.left[11] = {
-          DiagnosticError = {
-            provider = 'DiagnosticError',
-            icon = '  ',
-            highlight = {color14,background}
-          }
-        }
-        gls.left[12] = {
-          Space = {
-            provider = function () return ' ' end
-          }
-        }
-        gls.left[13] = {
-          DiagnosticWarn = {
-            provider = 'DiagnosticWarn',
-            icon = '  ',
-            highlight = {color9,background},
-          }
-        }
-        gls.right[1]= {
-          FileFormat = {
-            provider = 'FileFormat',
-            separator = ' ',
-            separator_highlight = {background,cursor},
-            highlight = {foreground,cursor,'bold'},
-          }
-        }
-        gls.right[4] = {
-          LineInfo = {
-            provider = 'LineColumn',
-            separator = ' | ',
-            separator_highlight = {color12,cursor},
-            highlight = {foreground,cursor},
-          },
-        }
-        gls.right[5] = {
-          PerCent = {
-            provider = 'LinePercent',
-            separator = ' ',
-            separator_highlight = {cursor,cursor},
-            highlight = {color5,color4,'bold'},
-          }
-        }
-        gls.right[6] = {
-            ShowLspClient = {
-                provider = function()
-                    local clients = vim.lsp.buf_get_clients(0)
-                    local count = vim.tbl_count(clients)
-                    return "(" .. count .. ")"
-                end,
-                condition = function()
-                    local disabledFiletypes = { [" "] = true }
-                    if disabledFiletypes[vim.bo.filetype] then
-                        return false
-                    end
-                    return true and custom_condition.wide_window_condition()
-                end,
-                highlight = { color0, background },
-            },
-        }
-        gls.short_line_left[1] = {
-          BufferType = {
-            provider = 'FileTypeName',
-            separator = '',
-            condition = has_file_type,
-            separator_highlight = {color13,background},
-            highlight = {foreground,color13}
-          }
-        }
-        gls.short_line_right[1] = {
-          BufferIcon = {
-            provider= 'BufferIcon',
-            separator = '',
-            condition = has_file_type,
-            separator_highlight = {color13,background},
-            highlight = {foreground,color13}
-          }
-        }
         local saga = require 'lspsaga'
         saga.init_lsp_saga()
         require('lspconfig').pyright.setup{}
@@ -817,10 +632,6 @@
         require'lspconfig'.dockerls.setup{}
         require('gitsigns').setup()
         require('colorizer').setup()
-        require('lspkind').init({
-          with_text = true,
-          preset = 'codicons',
-        })
         require'nvim-treesitter.configs'.setup {
           ensure_installed = {
             "javascript", "tsx", "svelte", "supercollider", "python", "rust", "vue"
@@ -828,12 +639,14 @@
           ignore_install = {
             "elm", "fortran", "ocaml_interface", "scss", "vue"
           },
+          ensure_installed = "maintained",
+          sync_install = false,
           indent = {
             enable = true,
           },
           highlight = {
             enable = true,
-            additional_vim_regex_highlighting = true,
+            additional_vim_regex_highlighting = false,
           },
           rainbow = {
             enable = true,
@@ -901,7 +714,7 @@
     jq
     mosh
     nfs-ganesha
-    nfsUtils
+    nfs-utils
     nfstrace
     nodejs
     ntfs3g
@@ -948,17 +761,13 @@
     japa
     meterbridge
     ncmpcpp
-    non
     pavucontrol
     pkg-config
     rubberband
     sox
     soxr
-    supercollider
+    #supercollider
     timemachine
-    xjadeo
-    wine-staging
-    winetricks
     wireshark
     zita-ajbridge
     zita-at1
@@ -975,7 +784,7 @@
     gst_all_1.gst-plugins-ugly
     gst_all_1.gst-devtools
     gst_all_1.gst-rtsp-server
-    gst_all_1.gstreamermm
+    #gst_all_1.gstreamermm
     gst_all_1.gst-vaapi
     libass
     libarchive
@@ -987,7 +796,7 @@
     libuchardet
     libvdpau-va-gl
     xorg.libXext
-    libva1-full
+    libva1
     libva-utils
     mpv-with-scripts
     mpvScripts.autoload
@@ -998,7 +807,7 @@
     neomutt
     thunderbird
     weechat
-    weechatScripts.weechat-autosort
+    #weechatScripts.weechat-autosort
     weechatScripts.weechat-matrix
     weechatScripts.weechat-matrix-bridge
     weechatScripts.weechat-notify-send
@@ -1017,6 +826,12 @@
     libcap
     glib
     glibc
+    ##newer tools
+    rofi-pass
+    rofi-systemd
+    rofi-mpd
+    newsboat
+    czkawka
   ];
 	environment.variables = {
 	    EDITOR = "nvim";
@@ -1030,24 +845,12 @@
     enable = true;
     brightness = {
       day = "1";
-      night = "0.70";
+      night = "0.85";
     };
     temperature = {
       day = 6500;
       night = 3500;
     };
-  };
-
-  programs.atop = {
-    atopService.enable = true;
-    atopgpu.enable = true;
-    setuidWrapper.enable = true;
-  };
-
-  location = {
-    latitude = 35.9356;
-    longitude = -87.2177;
-    provider = "geoclue2";
   };
 
   powerManagement = {
@@ -1086,10 +889,9 @@
       liberation_ttf
       fira-code
       fira-code-symbols
-      mplus-outline-fonts
       dina-font
       proggyfonts
-      font-awesome-ttf
+      font-awesome
       siji
     ];
   };
@@ -1111,7 +913,7 @@
     BROWSER = "firefox";
   };
   environment.shellAliases = {
-    ytdl = "yt-dlp -N 10 --yes-playlist --download-archive 'archive.log' -i --add-metadata --all-subs -f '(bestvideo[vcodec^=av01][height>=1080][fps>30]/bestvideo[vcodec=vp9.2][height>=1080][fps>30]/bestvideo[vcodec=vp9][height>=1080][fps>30]/bestvideo[vcodec^=av01][height>=1080]/bestvideo[vcodec=vp9.2][height>=1080]/bestvideo[vcodec=vp9][height>=1080]/bestvideo[height>=1080]/bestvideo[vcodec^=av01][height>=720][fps>30]/bestvideo[vcodec=vp9.2][height>=720][fps>30]/bestvideo[vcodec=vp9][height>=720][fps>30]/bestvideo[vcodec^=av01][height>=720]/bestvideo[vcodec=vp9.2][height>=720]/bestvideo[vcodec=vp9][height>=720]/bestvideo[height>=720]/bestvideo)+(bestaudio[acodec=opus]/bestaudio)/best' --merge-output-format mkv";
+    ytdl = "yt-dlp -N 10 --yes-playlist --download-archive 'archive.log' -i --add-metadata --all-subs -f best --merge-output-format mkv";
   };
 
   hardware.pulseaudio.enable = true;
@@ -1119,6 +921,7 @@
   hardware.pulseaudio.extraConfig = ''
     load-module module-jack-sink channels=2 connect=true
     load-module module-jack-source channels=2 connect=true
+    load-module module-native-protocol-tcp auth-ip-acl=127.0.0.1
   '';
   hardware.pulseaudio.daemon.config = {realtime-scheduling = "yes";};
   systemd.user.services.pulseaudio.after = [ "jack.service" ];
@@ -1126,9 +929,15 @@
     JACK_PROMISCUOUS_SERVER = "jackaudio";
   };
 
-  nix = {
-    buildCores = 6;
-    maxJobs = 5;
+  nix.settings = {
+    cores = 5;
+    max-jobs = 4;
+  };
+
+  nix.gc = {
+    automatic = true;
+    dates     = "weekly";
+    options   = "--delete-older-than 7d";
   };
 
   # Enable all the firmware
@@ -1144,4 +953,35 @@
   boot.blacklistedKernelModules = [ "snd_hda_codec_realtek" "snd_hda_codec_hdmi" "snd_hda_intel" ];
 
   security.sudo.wheelNeedsPassword = false;
+
+  location = {
+    latitude = 35.9356;
+    longitude = -87.2177;
+    provider = "geoclue2";
+  };
+
+  services.mpd.enable = true;
+  services.mpd.musicDirectory = "/mnt/datadaddy/Music";
+  services.mpd.extraConfig = ''
+    audio_output {
+      type "pulse"
+      name "Pulseaudio"
+      server "127.0.0.1"
+    }
+    input_cache {
+      size "1 GB"
+    }
+  '';
+  system.autoUpgrade.enable = true;
+  system.autoUpgrade.allowReboot = false;
+
+  virtualisation = {
+    docker = {
+      enable = true;
+      autoPrune = {
+        enable = true;
+        dates = "weekly";
+      };
+    };
+  };
 }

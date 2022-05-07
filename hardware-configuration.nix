@@ -24,18 +24,17 @@
     };
 
   fileSystems."/mnt/datadaddy/Music" =
-    { device = "192.168.0.137:/Music/Artists";
+    { device = "192.168.0.137:/Music/Collection";
       fsType = "nfs";
     };
 
-  fileSystems."/mnt/datadaddy/torrent/video2/YouTube" =
-    { device = "192.168.0.137:/torrent/video2/YouTube";
+  fileSystems."/mnt/datadaddy/general/ingest/YouTube" =
+    { device = "192.168.0.137:/general/ingest/YouTube";
       fsType = "nfs";
     };
 
-
-  fileSystems."/mnt/datadaddy/torrent/video2/Movies" =
-    { device = "192.168.0.137:/torrent/video2/Movies";
+  fileSystems."/mnt/datadaddy/general/ingest/podcast" =
+    { device = "192.168.0.137:/audio/Archive/podcast";
       fsType = "nfs";
     };
 
@@ -45,7 +44,8 @@
     };
 
   swapDevices =
-    [ { device = "/dev/disk/by-uuid/98d39efb-9b47-488d-8bb6-c18b1fc046f9"; }
+    #[ { device = "/dev/disk/by-uuid/98d39efb-9b47-488d-8bb6-c18b1fc046f9"; }
+    [ { device = "/dev/disk/by-uuid/2f1ec8a2-dff9-4b0a-875e-388a454ccb13"; }
     ];
 
   powerManagement.cpuFreqGovernor = lib.mkDefault "performance";
