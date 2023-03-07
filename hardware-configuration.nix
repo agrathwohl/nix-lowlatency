@@ -29,7 +29,7 @@
     };
 
   fileSystems."/mnt/datadaddy/general/ingest/YouTube" =
-    { device = "192.168.0.137:/general/ingest/YouTube";
+    { device = "192.168.0.137:/video2/YouTube";
       fsType = "nfs";
     };
 
