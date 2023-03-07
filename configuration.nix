@@ -16,10 +16,13 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
+  #boot.kernelPackages = pkgs.linuxPackages-rt_latest;
+
   musnix.enable = true;
-  musnix.kernel.optimize = true;
+  ## NO LONGER IN MUSNIX APPARENTLY musnix.kernel.optimize = true;
   musnix.kernel.realtime = true;
-  musnix.kernel.packages = pkgs.linuxPackages_latest_rt;
+  musnix.kernel.packages = pkgs.linuxPackages_5_15_rt;
+  #musnix.kernel.packages = pkgs.linuxPackages-rt_latest;
   musnix.das_watchdog.enable = true;
 
   # CONFIG THIS LATER--NO IDEA IF THIS IS CORRECT
@@ -27,7 +30,7 @@
   musnix.rtirq = {
     resetAll = 1;
     prioLow = 0;
-    prioHigh = 99;
+    prioHigh = 95;
     enable = true;
     nameList = "hpet rtc0 snd snd_hdsp usb";
     highList = "timer snd_hdsp";
@@ -43,13 +46,6 @@
     };
   };
 
-  nixpkgs.overlays = [
-    (import (builtins.fetchTarball {
-      url = https://github.com/nix-community/neovim-nightly-overlay/archive/master.tar.gz;
-    }))
-  ];
-
-
   networking.hostName = "flynix";
 
   time.timeZone = "America/Chicago";
@@ -59,11 +55,9 @@
     home = "/home/gwohl";
     description = "Andrew A. Grathwohl";
     shell = pkgs.zsh;
-    extraGroups = [ "jackaudio" "networkmanager" "audio" "wheel" "docker" "fuse"
-    "media" "dialout" ];
+    extraGroups = [ "jackaudio" "networkmanager" "audio" "wheel" "fuse"
+    "media" "dialout" "realtime" ];
   };
-
-  nix.trustedUsers = [ "root" "gwohl" ];
 
   # networking.hostName = "nixos"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
@@ -78,6 +72,9 @@
   networking.interfaces.enp0s25.useDHCP = true;
   networking.interfaces.enp4s0.useDHCP = true;
   networking.interfaces.enp5s0.useDHCP = true;
+
+  # iOS Tethering
+  services.usbmuxd.enable = true;
 
   services.smartd = {
     enable = true;
@@ -103,7 +100,6 @@
   services.xserver.layout = "us";
   services.xserver.libinput.enable = true;
   services.xserver.autorun = false;
-  services.xserver.dpi = 110;
   services.xserver.enableCtrlAltBackspace = true;
 
   services.xserver.displayManager = {
@@ -116,9 +112,6 @@
 
   services.picom = {
     enable = true;
-    activeOpacity = 1.0;
-    inactiveOpacity = 1.0;
-    menuOpacity = 0.8;
     backend = "glx";
     vSync = true;
   };
@@ -127,10 +120,6 @@
   services.fwupd.enable = true;
 
 #############################################
-
-  # Configure network proxy if necessary
-  # networking.proxy.default = "http://user:password@proxy:port/";
-  # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
 
   # Select internationalisation properties.
   i18n.defaultLocale = "en_US.UTF-8";
@@ -148,8 +137,7 @@
   # Enable the X11 windowing system.
   #services.xserver.enable = true;
   #hardware.nvidia.powerManagement.enable = true;
-  #hardware.nvidia.nvidiaPersistenced = true;
-
+  #hardware.nvidia.open = true;
   # Enable sound.
   sound.enable = true;
 
@@ -173,7 +161,7 @@
     };
   };
 
-  services.thermald.enable = true;
+  #services.thermald.enable = true;
 
 
   services.fail2ban = {
@@ -237,8 +225,6 @@
 
   programs.mosh.enable = true;
 
-  programs.noisetorch.enable = true;
-
   # services.xserver.xkbOptions = "eurosign:e";
 
   # List packages installed in system profile. To search, run:
@@ -266,8 +252,6 @@
   };
   programs.dconf.enable = true;
 
-  programs.fish.enable = false;
-
   programs.zsh = {
     enable = true;
     autosuggestions.enable = true;
@@ -284,382 +268,6 @@
       "pip" "cp" "git" "colored-man-pages" "command-not-found" "extract" "aws" ];
       theme = "fletcherm"; # "ys" "robbyrussell"
     };
-  };
-
-  programs.thefuck.enable = true;
-
-  programs.neovim = {
-    defaultEditor = true;
-    enable = true;
-    viAlias = false;
-    vimAlias = true;
-    configure = {
-      plug.plugins = with pkgs.vimPlugins; [
-        vim-lastplace vim-nix gitsigns-nvim glow-nvim
-        i3config-vim indent-blankline-nvim nvim-lsputils lsp-colors-nvim lsp-status-nvim
-        lspsaga-nvim markdown-preview-nvim nvim-lspconfig nvim-lightbulb
-        nvim-treesitter nvim-web-devicons popup-nvim scrollbar-nvim trouble-nvim
-        todo-comments-nvim wal-vim webapi-vim barbar-nvim nvim-colorizer-lua
-        defx-git defx-icons defx-nvim diagnostic-nvim nvim-nonicons plenary-nvim
-        bufferline-nvim popfix vim-toml telescope-nvim telescope-symbols-nvim
-        dashboard-nvim fzf-lsp-nvim lsp_signature-nvim lualine-nvim
-        vim-better-whitespace vista-vim vim-devicons nvim-autopairs
-        papercolor-theme completion-nvim completion-buffers
-        completion-treesitter nvim-tree-lua nvim-ts-rainbow glow-nvim
-        (nvim-treesitter.withPlugins (
-          plugins: pkgs.tree-sitter.allGrammars
-        ))
-      ];
-    customRC = ''
-      set termguicolors
-      set guioptions-=m
-      set guioptions-=T
-      set nocursorcolumn
-      set number
-      set autoread
-      set guicursor=
-      set nowb
-      set noswapfile
-      set encoding=utf8
-      set wildmenu
-      set ruler
-      set cmdheight=2
-      set backspace=eol,start,indent
-      set whichwrap+=<,>,h,l
-      set textwidth=80
-      set linebreak
-      set nolist
-      set nowrap
-      set breakindent
-      set lazyredraw
-      set mouse=a
-      set noshowmode
-      set expandtab
-      set tabstop=2
-      set softtabstop=2
-      set shiftwidth=2
-      set smarttab
-      set autoindent
-      set shiftround
-      set showmatch
-      set gdefault
-      set magic
-      set noerrorbells
-      set novisualbell
-      syntax enable
-      set background=dark
-      colorscheme 256_noir
-      "colorscheme PaperColor
-      "autocmd CursorHold,CursorHoldI * lua require'nvim-lightbulb'.update_lightbulb()
-      highlight NvimTreeFolderIcon guibg=blue
-      "let g:rainbow_active = 1
-      "let g:nvim_tree_ignore = [ '.git', 'node_modules', '.cache' ] "empty by default
-      let g:nvim_tree_gitignore = 1 "0 by default
-      let g:nvim_tree_quit_on_open = 1 "0 by default, closes the tree when you open a file
-      let g:nvim_tree_indent_markers = 1 "0 by default, this option shows indent markers when folders are open
-      "let g:nvim_tree_hide_dotfiles = 1 "0 by default, this option hides files and folders starting with a dot `.`
-      let g:nvim_tree_git_hl = 1 "0 by default, will enable file highlight for git attributes (can be used without the icons).
-      let g:nvim_tree_highlight_opened_files = 1 "0 by default, will enable folder and file icon highlight for opened files/directories.
-      let g:nvim_tree_root_folder_modifier = ':~' "This is the default. See :help filename-modifiers for more options
-      let g:nvim_tree_add_trailing = 1 "0 by default, append a trailing slash to folder names
-      let g:nvim_tree_group_empty = 1 " 0 by default, compact folders that only contain a single folder into one node in the file tree
-      let g:nvim_tree_disable_window_picker = 1 "0 by default, will disable the window picker.
-      let g:nvim_tree_icon_padding = ' ' "one space by default, used for rendering the space between the icon and the filename. Use with caution, it could break rendering if you set an empty string depending on your font.
-      let g:nvim_tree_symlink_arrow = ' >> ' " defaults to ' ➛ '. used as a separator between symlinks' source and target.
-      let g:nvim_tree_respect_buf_cwd = 1 "0 by default, will change cwd of nvim-tree to that of new buffer's when opening nvim-tree.
-      let g:nvim_tree_create_in_closed_folder = 0 "1 by default, When creating files, sets the path of a file when cursor is on a closed folder to the parent folder when 0, and inside the folder when 1.
-      let g:nvim_tree_refresh_wait = 500 "1000 by default, control how often the tree can be refreshed, 1000 means the tree can be refresh once per 1000ms.
-      let g:nvim_tree_window_picker_exclude = {
-          \   'filetype': [
-          \     'notify',
-          \     'packer',
-          \     'qf'
-          \   ],
-          \   'buftype': [
-          \     'terminal'
-          \   ]
-          \ }
-      " Dictionary of buffer option names mapped to a list of option values that
-      " indicates to the window picker that the buffer's window should not be
-      " selectable.
-      let g:nvim_tree_special_files = { 'README.md': 1, 'Makefile': 1, 'MAKEFILE': 1 } " List of filenames that gets highlighted with NvimTreeSpecialFile
-      let g:nvim_tree_show_icons = {
-          \ 'git': 1,
-          \ 'folders': 0,
-          \ 'files': 0,
-          \ 'folder_arrows': 0,
-          \ }
-      "If 0, do not show the icons for one of 'git' 'folder' and 'files'
-      "1 by default, notice that if 'files' is 1, it will only display
-      "if nvim-web-devicons is installed and on your runtimepath.
-      "if folder is 1, you can also tell folder_arrows 1 to show small arrows next to the folder icons.
-      "but this will not work when you set indent_markers (because of UI conflict)
-
-      " default will show icon by default if no icon is provided
-      " default shows no icon by default
-      let g:nvim_tree_icons = {
-          \ 'default': '',
-          \ 'symlink': '',
-          \ 'git': {
-          \   'unstaged': "✗",
-          \   'staged': "✓",
-          \   'unmerged': "",
-          \   'renamed': "➜",
-          \   'untracked': "★",
-          \   'deleted': "",
-          \   'ignored': "◌"
-          \   },
-          \ 'folder': {
-          \   'arrow_open': "",
-          \   'arrow_closed': "",
-          \   'default': "",
-          \   'open': "",
-          \   'empty': "",
-          \   'empty_open': "",
-          \   'symlink': "",
-          \   'symlink_open': "",
-          \   }
-          \ }
-
-      nnoremap <C-n> :NvimTreeToggle<CR>
-      nnoremap <leader>r :NvimTreeRefresh<CR>
-      nnoremap <leader>n :NvimTreeFindFile<CR>
-      " NvimTreeOpen, NvimTreeClose, NvimTreeFocus and NvimTreeResize are also available if you need them
-
-      """""""""""""""""""""""""""""""""""""""" `bufferline` config
-      """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-      " NOTE: If barbar's option dict isn't created yet, create it
-      let bufferline = get(g:, 'bufferline', {})
-
-      " New tabs are opened next to the currently selected tab.
-      " Enable to insert them in buffer number order.
-      let bufferline.add_in_buffer_number_order = v:false
-
-      " Enable/disable animations
-      let bufferline.animation = v:true
-
-      " Enable/disable auto-hiding the tab bar when there is a single buffer
-      let bufferline.auto_hide = v:false
-
-      " Enable/disable current/total tabpages indicator (top right corner)
-      let bufferline.tabpages = v:true
-
-      " Enable/disable close button
-      let bufferline.closable = v:true
-
-      " Enables/disable clickable tabs
-      "  - left-click: go to buffer
-      "  - middle-click: delete buffer
-      let bufferline.clickable = v:true
-
-      " Enable/disable icons
-      " if set to 'buffer_number', will show buffer number in the tabline
-      " if set to 'numbers', will show buffer index in the tabline
-      " if set to 'both', will show buffer index and icons in the tabline
-      let bufferline.icons = v:true
-
-      " Sets the icon's highlight group.
-      " If false, will use nvim-web-devicons colors
-      let bufferline.icon_custom_colors = v:false
-
-      " Configure icons on the bufferline.
-      let bufferline.icon_separator_active = '▎'
-      let bufferline.icon_separator_inactive = '▎'
-      let bufferline.icon_close_tab = ''
-      let bufferline.icon_close_tab_modified = '●'
-      let bufferline.icon_pinned = '車'
-
-      " If true, new buffers will be inserted at the start/end of the list.
-      " Default is to insert after current buffer.
-      let bufferline.insert_at_start = v:false
-      let bufferline.insert_at_end = v:false
-
-      " Sets the maximum padding width with which to surround each tab.
-      let bufferline.maximum_padding = 4
-
-      " Sets the maximum buffer name length.
-      let bufferline.maximum_length = 30
-
-      " If set, the letters for each buffer in buffer-pick mode will be
-      " assigned based on their name. Otherwise or in case all letters are
-      " already assigned, the behavior is to assign letters in order of
-      " usability (see order below)
-      let bufferline.semantic_letters = v:true
-
-      " New buffer letters are assigned in this order. This order is
-      " optimal for the qwerty keyboard layout but might need adjustement
-      " for other layouts.
-      let bufferline.letters =
-        \ 'asdfjkl;ghnmxcvbziowerutyqpASDFJKLGHNMXCVBZIOWERUTYQP'
-
-      " Sets the name of unnamed buffers. By default format is "[Buffer X]"
-      " where X is the buffer number. But only a static string is accepted here.
-      let bufferline.no_name_title = v:null
-      let g:dashboard_default_executive ='telescope'
-
-      nnoremap <silent> gd <cmd>lua require'lspsaga.provider'.preview_definition()<CR>
-      nnoremap <silent><leader>cd <cmd>lua require'lspsaga.diagnostic'.show_line_diagnostics()<CR>
-      nnoremap <silent> <leader>cd :Lspsaga show_line_diagnostics<CR>
-      nnoremap <silent><leader>cc <cmd>lua require'lspsaga.diagnostic'.show_cursor_diagnostics()<CR>
-      nnoremap <silent> [e <cmd>lua require'lspsaga.diagnostic'.lsp_jump_diagnostic_prev()<CR>
-      nnoremap <silent> ]e <cmd>lua require'lspsaga.diagnostic'.lsp_jump_diagnostic_next()<CR>
-
-      let g:webdevicons_enable = 1
-
-      lua <<EOF
-
-
-      if vim.fn.has('nvim-0.5.1') == 1 then
-          vim.lsp.handlers['textDocument/codeAction'] = require'lsputil.codeAction'.code_action_handler
-          vim.lsp.handlers['textDocument/references'] = require'lsputil.locations'.references_handler
-          vim.lsp.handlers['textDocument/definition'] = require'lsputil.locations'.definition_handler
-          vim.lsp.handlers['textDocument/declaration'] = require'lsputil.locations'.declaration_handler
-          vim.lsp.handlers['textDocument/typeDefinition'] = require'lsputil.locations'.typeDefinition_handler
-          vim.lsp.handlers['textDocument/implementation'] = require'lsputil.locations'.implementation_handler
-          vim.lsp.handlers['textDocument/documentSymbol'] = require'lsputil.symbols'.document_handler
-          vim.lsp.handlers['workspace/symbol'] = require'lsputil.symbols'.workspace_handler
-      else
-          local bufnr = vim.api.nvim_buf_get_number(0)
-
-          vim.lsp.handlers['textDocument/codeAction'] = function(_, _, actions)
-              require('lsputil.codeAction').code_action_handler(nil, actions, nil, nil, nil)
-          end
-
-          vim.lsp.handlers['textDocument/references'] = function(_, _, result)
-              require('lsputil.locations').references_handler(nil, result, { bufnr = bufnr }, nil)
-          end
-
-          vim.lsp.handlers['textDocument/definition'] = function(_, method, result)
-              require('lsputil.locations').definition_handler(nil, result, { bufnr = bufnr, method = method }, nil)
-          end
-
-          vim.lsp.handlers['textDocument/declaration'] = function(_, method, result)
-              require('lsputil.locations').declaration_handler(nil, result, { bufnr = bufnr, method = method }, nil)
-          end
-
-          vim.lsp.handlers['textDocument/typeDefinition'] = function(_, method, result)
-              require('lsputil.locations').typeDefinition_handler(nil, result, { bufnr = bufnr, method = method }, nil)
-          end
-
-          vim.lsp.handlers['textDocument/implementation'] = function(_, method, result)
-              require('lsputil.locations').implementation_handler(nil, result, { bufnr = bufnr, method = method }, nil)
-          end
-
-          vim.lsp.handlers['textDocument/documentSymbol'] = function(_, _, result, _, bufn)
-              require('lsputil.symbols').document_handler(nil, result, { bufnr = bufn }, nil)
-          end
-
-          vim.lsp.handlers['textDocument/symbol'] = function(_, _, result, _, bufn)
-              require('lsputil.symbols').workspace_handler(nil, result, { bufnr = bufn }, nil)
-          end
-      end
-      EOF
-
-            " Special
-      let wallpaper  = "/home/gwohl/Pictures/1624873033603-0.jpg"
-      let background = "#0a0603"
-      let foreground = "#a8c4cb"
-      let cursor     = "#a8c4cb"
-
-      " Colors
-      let color0  = "#0a0603"
-      let color1  = "#919110"
-      let color2  = "#12a4a4"
-      let color3  = "#15c2ac"
-      let color4  = "#16cd46"
-      let color5  = "#1174a0"
-      let color6  = "#176fd1"
-      let color7  = "#a8c4cb"
-      let color8  = "#75898e"
-      let color9  = "#919110"
-      let color10 = "#12a4a4"
-      let color11 = "#15c2ac"
-      let color12 = "#16cd46"
-      let color13 = "#1174a0"
-      let color14 = "#176fd1"
-      let color15 = "#a8c4cb"
-
-      lua << EOF
-        require'nvim-web-devicons'.setup {
-          default = true;
-        }
-        require('trouble').setup {
-          -- your configuration comes here
-          -- or leave it empty to use the default settings
-          -- refer to the configuration section below
-        }
-        local function lsp_status(status)
-            shorter_stat = ""
-            for match in string.gmatch(status, "[^%s]+")  do
-                err_warn = string.find(match, "^[WE]%d+", 0)
-                if not err_warn then
-                    shorter_stat = shorter_stat .. ' ' .. match
-                end
-            end
-            return shorter_stat
-        end
-
-        local function trailing_whitespace()
-            local trail = vim.fn.search("\\s$", "nw")
-            if trail ~= 0 then
-                return ' '
-            else
-                return nil
-            end
-        end
-
-        local custom_condition = {
-          buffer_not_empty = function()
-              if vim.fn.empty(vim.fn.expand "%:t") ~= 1 then
-                  return true
-              end
-              return false
-          end,
-          wide_window_condition = function()
-              return vim.fn.winwidth "%" >= 160 -- 160 is a somewhat random number. it felt nice.
-            end,
-        }
-        TrailingWhiteSpace = trailing_whitespace
-        local saga = require 'lspsaga'
-        saga.init_lsp_saga()
-        require('lspconfig').pyright.setup{}
-        require'lspconfig'.vuels.setup{}
-        require'lspconfig'.jsonls.setup{}
-        require'lspconfig'.tsserver.setup{}
-        require'lspconfig'.tailwindcss.setup{}
-        require'lspconfig'.svelte.setup{}
-        require'lspconfig'.html.setup{}
-        require'lspconfig'.dockerls.setup{}
-        require('gitsigns').setup()
-        require('colorizer').setup()
-        require'nvim-treesitter.configs'.setup {
-          ensure_installed = {
-            "javascript", "tsx", "svelte", "supercollider", "python", "rust", "vue"
-          },
-          ignore_install = {
-            "elm", "fortran", "ocaml_interface", "scss", "vue"
-          },
-          ensure_installed = "maintained",
-          sync_install = false,
-          indent = {
-            enable = true,
-          },
-          highlight = {
-            enable = true,
-            additional_vim_regex_highlighting = false,
-          },
-          rainbow = {
-            enable = true,
-            extended_mode = true,
-            max_file_lines = nil,
-          },
-        }
-        require('nvim-autopairs').setup({
-          disable_filetype = { "TelescopePrompt" , "vim" },
-        })
-      EOF
-    '';
-  };
   };
 
   # List services that you want to enable:
@@ -691,7 +299,7 @@
     asciinema            # record the terminal
     alacritty
     atop
-    aws
+    awscli2
     betterlockscreen
     blugon
     bpytop
@@ -732,6 +340,8 @@
     simple-scan
     speedtest-cli
     taskwarrior
+    taskwarrior-tui
+    tickrs
     unclutter
     unzip
     usbutils
@@ -745,30 +355,30 @@
     alsaPlugins
     alsaTools
     alsaUtils
+    ardour
     audiowaveform
     bitmeter
-    carla
+    ebumeter
     fftwFloat
-    libjack2
     libopus
     libsamplerate
     libshout
     libvorbis
     jack2
     jack_capture
-    jackmix
-    jackmeter
-    japa
-    meterbridge
+    mimic
     ncmpcpp
     pavucontrol
     pkg-config
-    rubberband
+    r128gain
+    reaper
+    shntool
+    sndpeek
     sox
     soxr
-    #supercollider
     timemachine
-    wireshark
+    yabridge
+    yabridgectl
     zita-ajbridge
     zita-at1
     zita-njbridge
@@ -798,24 +408,21 @@
     xorg.libXext
     libva1
     libva-utils
-    mpv-with-scripts
-    mpvScripts.autoload
+    mpv
+    #mpv-with-scripts
+    #mpvScripts.autoload
     nv-codec-headers
     vaapiVdpau
     vapoursynth
+    shotcut
     ####MISC
     neomutt
     thunderbird
-    weechat
-    #weechatScripts.weechat-autosort
-    weechatScripts.weechat-matrix
-    weechatScripts.weechat-matrix-bridge
-    weechatScripts.weechat-notify-send
     ####NUR
     nur.repos.dan4ik605743.bitmap-fonts
     ###libsodium stuff
     #### from cabal-desktop nix-shell
-    clang
+    #clang
     gnumake
     libtool
     autoconf
@@ -831,7 +438,9 @@
     rofi-systemd
     rofi-mpd
     newsboat
-    czkawka
+    abook
+    dua
+    vim
   ];
 	environment.variables = {
 	    EDITOR = "nvim";
@@ -880,6 +489,20 @@
 
   fonts = {
     fontconfig.enable = true;
+    fontconfig.defaultFonts = {
+      monospace = [
+        "Victor Mono"
+        "Iosevka"
+      ];
+      sansSerif = [
+        "DejaVu Sans"
+        "IPAPGothic"
+      ];
+      serif = [
+        "DejaVu Serif"
+        "IPAPMincho"
+      ];
+    };
     fontDir.enable = true;
     enableGhostscriptFonts = true;
     fonts = with pkgs; [
@@ -893,6 +516,9 @@
       proggyfonts
       font-awesome
       siji
+      victor-mono
+      ipafont
+      dejavu_fonts
     ];
   };
 
@@ -913,7 +539,7 @@
     BROWSER = "firefox";
   };
   environment.shellAliases = {
-    ytdl = "yt-dlp -N 10 --yes-playlist --download-archive 'archive.log' -i --add-metadata --all-subs -f best --merge-output-format mkv";
+    ytdl = "yt-dlp -N 10 -w --yes-playlist --download-archive 'archive.log' -i --embed-thumbnail --embed-subs --embed-metadata --embed-chapters --write-subs --write-auto-subs -f best --merge-output-format mkv";
   };
 
   hardware.pulseaudio.enable = true;
@@ -927,11 +553,6 @@
   systemd.user.services.pulseaudio.after = [ "jack.service" ];
   systemd.user.services.pulseaudio.environment = {
     JACK_PROMISCUOUS_SERVER = "jackaudio";
-  };
-
-  nix.settings = {
-    cores = 5;
-    max-jobs = 4;
   };
 
   nix.gc = {
@@ -972,16 +593,13 @@
       size "1 GB"
     }
   '';
-  system.autoUpgrade.enable = true;
-  system.autoUpgrade.allowReboot = false;
 
-  virtualisation = {
-    docker = {
-      enable = true;
-      autoPrune = {
-        enable = true;
-        dates = "weekly";
-      };
-    };
-  };
+  systemd.targets.sleep.enable = false;
+  systemd.targets.suspend.enable = false;
+  systemd.targets.hibernate.enable = false;
+  systemd.targets.hybrid-sleep.enable = false;
+  nixpkgs.config.permittedInsecurePackages = [
+    "python-2.7.18.6"
+  ];
+
 }
